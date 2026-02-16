@@ -193,12 +193,12 @@ def main():
             })
 
     if not collected:
-    telegram_send_message(
-        token,
-        chat_id,
-        "🕵️‍♂️📰 <b>지난 12시간 내 NextBiomedical에 직접 관련 된 외신이 없었습니다.</b>"
-    )
-    return
+        telegram_send_message(
+            token,
+            chat_id,
+            "🕵️‍♂️📰 <b>지난 12시간 내 NextBiomedical에 직접 관련 된 외신이 없었습니다.</b>"
+        )
+        return
 
     collected.sort(key=lambda x: x["published"], reverse=True)
     collected = collected[:MAX_ITEMS]
