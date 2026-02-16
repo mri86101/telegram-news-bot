@@ -178,14 +178,14 @@ def main():
                 "title_key": title_key,
             })
 
-if not collected:
-    print("[DEBUG] No articles found in last 12 hours.")
-    telegram_send_message(
-        token,
-        chat_id,
-        "🗞️ NextBiomedical / Nexpowder / Nexsphere F\n최근 12시간 내 새 해외 뉴스가 없습니다."
-    )
-    return
+    if not collected:
+        print("[DEBUG] No articles found in last 12 hours.")
+        telegram_send_message(
+            token,
+            chat_id,
+            "🗞️ NextBiomedical / Nexpowder / Nexsphere F\n최근 12시간 내 새 해외 뉴스가 없습니다."
+        )
+        return
 
     collected.sort(key=lambda x: x["published"], reverse=True)
     collected = collected[:MAX_ITEMS]
