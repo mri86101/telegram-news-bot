@@ -178,7 +178,7 @@ def main():
                 "title_key": title_key,
             })
 
-    if not collected:
+if not collected:
     print("[DEBUG] No articles found in last 12 hours.")
     telegram_send_message(
         token,
