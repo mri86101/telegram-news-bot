@@ -138,7 +138,6 @@ def telegram_send_message(token: str, chat_id: str, text: str):
         print("[TELEGRAM ERROR]", e.code, body)
         raise
 
-
 def main():
     token = os.environ["TELEGRAM_BOT_TOKEN"]
     chat_id = os.environ["TELEGRAM_CHAT_ID"]
@@ -154,6 +153,7 @@ def main():
     batch_title_keys = set()
 
     collected = []
+
     for q in QUERIES:
         feed = feedparser.parse(google_news_rss_url(q))
         for e in getattr(feed, "entries", []):
@@ -192,6 +192,7 @@ def main():
                 "title_key": title_key,
             })
 
+    # ✅ 기사 없을 때
     if not collected:
         telegram_send_message(
             token,
@@ -200,21 +201,19 @@ def main():
         )
         return
 
+    # ✅ 기사 있을 때
     collected.sort(key=lambda x: x["published"], reverse=True)
     collected = collected[:MAX_ITEMS]
 
-    collected.sort(key=lambda x: x["published"], reverse=True)
-collected = collected[:MAX_ITEMS]
+    lines = ["🧠📌 <b>지난 12시간 내 NextBiomedical에 직접 관련 된 외신 모음입니다.</b>\n"]
 
-lines = ["🧠📌 <b>지난 12시간 내 NextBiomedical에 직접 관련 된 외신 모음입니다.</b>\n"]
+    for i, it in enumerate(collected, 1):
+        title = escape_html(it["title"])
+        url = it["url"]
+        lines.append(f'{i}. <a href="{url}">{title}</a>')
 
-for i, it in enumerate(collected, 1):
-    title = escape_html(it["title"])
-    url = it["url"]
-    lines.append(f'{i}. <a href="{url}">{title}</a>')
-
-message = "\n".join(lines).strip()
-telegram_send_message(token, chat_id, message)
+    message = "\n".join(lines).strip()
+    telegram_send_message(token, chat_id, message)
 
     for it in collected:
         seen_items.append({
