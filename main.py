@@ -111,6 +111,10 @@ def parse_published(entry) -> datetime | None:
     return None
 
 
+def escape_html(s: str) -> str:
+    return (s or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
 def telegram_send_message(token: str, chat_id: str, text: str):
     import urllib.parse
     import urllib.error
@@ -118,10 +122,11 @@ def telegram_send_message(token: str, chat_id: str, text: str):
 
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     payload = {
-        "chat_id": chat_id,
-        "text": text,
-        "disable_web_page_preview": "true",
-    }
+    "chat_id": chat_id,
+    "text": text,
+    "disable_web_page_preview": "true",
+    "parse_mode": "HTML",
+}
     data = urllib.parse.urlencode(payload).encode("utf-8")
     req = urllib.request.Request(url, data=data, method="POST")
 
@@ -188,24 +193,28 @@ def main():
             })
 
     if not collected:
-        print("[DEBUG] No articles found in last 12 hours.")
-        telegram_send_message(
-            token,
-            chat_id,
-            "🗞️ NextBiomedical / Nexpowder / Nexsphere F\n최근 12시간 내 새 해외 뉴스가 없습니다."
-        )
-        return
+    telegram_send_message(
+        token,
+        chat_id,
+        "🕵️‍♂️📰 <b>지난 12시간 내 NextBiomedical에 직접 관련 된 외신이 없었습니다.</b>"
+    )
+    return
 
     collected.sort(key=lambda x: x["published"], reverse=True)
     collected = collected[:MAX_ITEMS]
 
-    lines = [f"🗞️ *NextBiomedical / Nexpowder / Nexsphere F* (last 12h, deduped)\n"]
-    for i, it in enumerate(collected, 1):
-        t = it["published"].strftime("%m-%d %H:%M KST")
-        lines.append(f"{i}) {it['title']}\n{t}\n{it['url']}\n")
+    collected.sort(key=lambda x: x["published"], reverse=True)
+collected = collected[:MAX_ITEMS]
 
-    message = "\n".join(lines).strip()
-    telegram_send_message(token, chat_id, message)
+lines = ["🧠📌 <b>지난 12시간 내 NextBiomedical에 직접 관련 된 외신 모음입니다.</b>\n"]
+
+for i, it in enumerate(collected, 1):
+    title = escape_html(it["title"])
+    url = it["url"]
+    lines.append(f'{i}. <a href="{url}">{title}</a>')
+
+message = "\n".join(lines).strip()
+telegram_send_message(token, chat_id, message)
 
     for it in collected:
         seen_items.append({
