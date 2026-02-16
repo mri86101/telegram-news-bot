@@ -113,16 +113,25 @@ def parse_published(entry) -> datetime | None:
 
 def telegram_send_message(token: str, chat_id: str, text: str):
     import urllib.parse
+    import urllib.error
+    import urllib.request
+
     url = f"https://api.telegram.org/bot{token}/sendMessage"
-    data = urllib.parse.urlencode({
+    payload = {
         "chat_id": chat_id,
         "text": text,
         "disable_web_page_preview": "true",
-        "parse_mode": "Markdown"
-    }).encode("utf-8")
+    }
+    data = urllib.parse.urlencode(payload).encode("utf-8")
     req = urllib.request.Request(url, data=data, method="POST")
-    with urllib.request.urlopen(req, timeout=20) as resp:
-        resp.read()
+
+    try:
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            resp.read()
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", errors="replace")
+        print("[TELEGRAM ERROR]", e.code, body)
+        raise
 
 
 def main():
