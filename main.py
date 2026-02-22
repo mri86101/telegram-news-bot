@@ -122,11 +122,11 @@ def telegram_send_message(token: str, chat_id: str, text: str):
 
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     payload = {
-    "chat_id": chat_id,
-    "text": text,
-    "disable_web_page_preview": "true",
-    "parse_mode": "HTML",
-}
+        "chat_id": chat_id,
+        "text": text,
+        "disable_web_page_preview": True,
+        "parse_mode": "HTML",
+    }
     data = urllib.parse.urlencode(payload).encode("utf-8")
     req = urllib.request.Request(url, data=data, method="POST")
 
@@ -137,6 +137,7 @@ def telegram_send_message(token: str, chat_id: str, text: str):
         body = e.read().decode("utf-8", errors="replace")
         print("[TELEGRAM ERROR]", e.code, body)
         raise
+
 
 def main():
     token = os.environ["TELEGRAM_BOT_TOKEN"]
@@ -159,7 +160,7 @@ def main():
         for e in getattr(feed, "entries", []):
             title = getattr(e, "title", "").strip()
             url = getattr(e, "link", "").strip()
-            summary = getattr(e, "summary", "")
+            summary = getattr(e, "summary", "") or ""
 
             published_dt = parse_published(e)
             if not published_dt or published_dt < cutoff_12h:
@@ -171,14 +172,9 @@ def main():
 
             url_key, title_key = make_keys(url, title)
 
-            if url_key and url_key in batch_url_keys:
+            if url_key and (url_key in batch_url_keys or url_key in seen_url_keys):
                 continue
-            if title_key and title_key in batch_title_keys:
-                continue
-
-            if url_key and url_key in seen_url_keys:
-                continue
-            if title_key and title_key in seen_title_keys:
+            if title_key and (title_key in batch_title_keys or title_key in seen_title_keys):
                 continue
 
             batch_url_keys.add(url_key)
@@ -192,16 +188,10 @@ def main():
                 "title_key": title_key,
             })
 
-    # ✅ 기사 없을 때
+    # ✅ 기사 없으면 아무것도 안 보냄
     if not collected:
-        telegram_send_message(
-            token,
-            chat_id,
-            "🕵️‍♂️📰 <b>지난 12시간 내 NextBiomedical에 직접 관련 된 외신이 없었습니다.</b>"
-        )
         return
 
-    # ✅ 기사 있을 때
     collected.sort(key=lambda x: x["published"], reverse=True)
     collected = collected[:MAX_ITEMS]
 
@@ -209,7 +199,7 @@ def main():
 
     for i, it in enumerate(collected, 1):
         title = escape_html(it["title"])
-        url = it["url"]
+        url = escape_html(it["url"])
         lines.append(f'{i}. <a href="{url}">{title}</a>')
 
     message = "\n".join(lines).strip()
